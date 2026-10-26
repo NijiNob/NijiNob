@@ -337,3 +337,17 @@ select,input{background:#1c1c1c;color:var(--text);border:1px solid var(--line);p
 }
 button,html{-webkit-tap-highlight-color:transparent}
 body{touch-action:manipulation;user-select:none;-webkit-user-select:none}
+/* ===== HUD縮小 ===== */
+.hud{display:grid;grid-template-columns:repeat(4,minmax(100px,1fr));gap:7px;margin-bottom:10px}
+.stat{padding:9px 11px}
+.stat .k{font-size:11px}
+.stat .v{font-size:20px}
+.stat .sub{font-size:10px}
+.stat.gold .v{font-size:23px}
+.stat.clickable .sub{font-size:12px}
+
+/* ===== 募兵タイル強調 ===== */
+.stile.recruit{border-color:var(--gold);background:#1c1810}
+.stile.recruit:hover{border-color:var(--gold);background:#262010}
+.stile.recruit .tk{color:var(--gold);font-weight:700}
+.stile.recruit .tv{font-size:15px;font-weight:800;color:var(--gold)}

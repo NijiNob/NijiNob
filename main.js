@@ -1,6 +1,6 @@
 (function(){
 "use strict";
-const SAVE_KEY="ryakudatsu_v0.27";
+const SAVE_KEY="ryakudatsu_v0.28";
 const HOME=5;
 
 const WOMEN = CHARACTERS.map(c=>[c.name,c.aff,c.rank,c.temper]);
@@ -271,12 +271,6 @@ function render(){
  const capBtn=document.getElementById("capTabBtn");
  capBtn.innerHTML="捕虜"+(readyCount?`<span class="tabbadge">${readyCount}</span>`:"");
  capBtn.classList.toggle("alert",readyCount>0);
- const broke=isBroke();
- document.getElementById("attackBtn").disabled=attackable().length===0||state.won||broke||!!state.battle;
- document.getElementById("recruitBtn").disabled=state.player.gold<1000||state.player.food<300||state.won||broke;
- document.getElementById("buildBtn").disabled=owned().length===0||state.won||broke;
- document.getElementById("specialBtn").disabled=state.won||broke;
- document.getElementById("nextBtn").disabled=state.won;
  document.getElementById("nextTop").disabled=state.won;
  if(state.won)showVictory();
  save(true);
@@ -284,13 +278,14 @@ function render(){
 function renderHud(){
  const broke=isBroke();
  const data=[
-  ["兵力",fmt(state.player.troops),"軍勢",""],
+  ["兵力",fmt(state.player.troops),"クリックで募兵","clickable"],
   ["兵糧",fmt(state.player.food),broke&&state.player.food<0?"破綻：行動不可":"毎ターン消費あり",state.player.food<400?"warn":""],
   ["金",fmt(state.player.gold),broke&&state.player.gold<0?"破綻：行動不可":"内政・募兵","gold"],
   ["威信",fmt(state.player.prestige),"クリックで国家方針","clickable"]
  ];
- document.getElementById("hud").innerHTML=data.map(d=>`<div class="stat ${d[3]}" ${d[3]==="clickable"?'data-open="tree"':""}><div class="k">${d[0]}</div><div class="v">${d[1]}</div><div class="sub">${d[2]}</div></div>`).join("");
+ document.getElementById("hud").innerHTML=data.map(d=>`<div class="stat ${d[3]}" ${d[3]==="clickable"?`data-open="${d[0]==="兵力"?"recruit":"tree"}"`:""}><div class="k">${d[0]}</div><div class="v">${d[1]}</div><div class="sub">${d[2]}</div></div>`).join("");
  document.querySelectorAll("[data-open='tree']").forEach(el=>el.addEventListener("click",openTree));
+ document.querySelectorAll("[data-open='recruit']").forEach(el=>el.addEventListener("click",openRecruit));
  document.getElementById("landCount").textContent=`領土 ${owned().length} / 16`;
 }
 function renderSideTiles(){
@@ -301,6 +296,7 @@ function renderSideTiles(){
  const dispN=state.captives.filter(t=>t.role==="display").length;
  const tiles=[
   ["land","領土",land+"/16"],
+  ["recruit","募兵",""],
   ["cap","捕虜",cap+"/"+capMax],
   ["niku","肉便器",nikuN],
   ["milk","乳牛",milkN],
@@ -313,9 +309,8 @@ function renderSideTiles(){
 function onTile(kind){
  if(kind==="land"){rightTab="lands";render();return;}
  if(kind==="record"){openRecord();return;}
- rightTab="captives";
- capFilter = kind==="cap"?"all":kind==="niku"?"nikubenki":kind==="milk"?"milk":"display";
- render();
+ if(kind==="recruit"){openRecruit();return;}
+ openCaptiveList(kind);
 }
 function renderMap(){
  const map=document.getElementById("map");map.innerHTML="";
@@ -464,6 +459,51 @@ function drawCaptureEvent(){
  root.querySelector("#closeCapEvent").onclick=()=>{root.innerHTML="";captureQueue=[];};
 }
 
+/* ===== 捕虜一覧モーダル ===== */
+function openCaptiveList(kind){
+ const filterMap={cap:"all",niku:"nikubenki",milk:"milk",disp:"display"};
+ const f=filterMap[kind]||"all";
+ const titleMap={cap:"捕虜",niku:"肉便器",milk:"乳牛",disp:"陳列"};
+ const title=titleMap[kind]||"捕虜";
+ let list=state.captives;
+ if(f==="nikubenki")list=list.filter(t=>t.role==="nikubenki");
+ else if(f==="milk")list=list.filter(t=>t.role==="milk");
+ else if(f==="display")list=list.filter(t=>t.role==="display");
+ const root=document.getElementById("modalroot");
+ const rows=list.length?list.map(t=>{
+  const p=PROFILE[t.name]||{};
+  const imgSrc=p.id?`images/${p.id}.png`:"";
+  const assigned=t.assignedCountry!=null;
+  const cls=assigned?HOUSING_CLASS[t.role]:"";
+  const contactDone=t.contactTurn===state.turn;
+  return `<div class="captive"><div class="cimg" data-prof="${escapeHtml(t.name)}">${imgSrc?`<img src="${imgSrc}" alt="${escapeHtml(t.name)}" onerror="this.style.display='none';this.parentNode.textContent='画像準備中';">`:"画像準備中"}${stampHtml(t)}</div><div class="cbody"><div class="cname-row"><h4>◇ <span class="namelink" data-prof="${escapeHtml(t.name)}">${escapeHtml(t.name)}</span></h4></div><div class="cmeta-row"><span class="pill aff">${escapeHtml(t.affiliation||"")}</span>${t.temper.map(x=>`<span class="temperpill">${x.name}</span>`).join("")}${(t.traits||[]).map(id=>traitPillHtml(id)).join("")}<span class="status ${t.status==="ready"?"ready":t.status==="display"?cls:"resist"}">${t.status==="resist"?"抵抗":t.status==="ready"?"屈服可":assigned?`${HOUSING_LABEL[t.role]} @${state.countries[t.assignedCountry].name}`:"未割当"}</span></div>${t.status==="resist"?`<p>抵抗 ${t.resist} / ${t.resistMax}</p>`:(t.effect?`<p>${escapeHtml(t.effect)}</p>`:"")}${t.status==="resist"?`<div class="contactrow">${["shame","pain","kind"].map(k=>{const r=contactResult(t,k);const cls2=r>0?"hit":r<0?"miss":"";return `<button data-contact="${t.id}" data-kind="${k}" ${contactDone?"disabled":""} class="${cls2}">${CONTACT_LABEL[k]}${r>0?" ▲":r<0?" ▼":""}</button>`;}).join("")}</div>`:""}${t.status==="ready"?`<div class="actions"><button data-assign="${t.id}">国に割り当て</button></div>`:""}${assigned?`<div class="actions"><button data-unassign="${t.id}" class="danger">割当解除</button></div>`:""}</div></div>`;
+ }).join(""):`<div class="empty">該当する女がいません。</div>`;
+ root.innerHTML=`<div class="battleoverlay"><div class="modal wide"><h2>${title} 一覧</h2><p>${list.length}名。</p><div class="separator"></div><div class="captives" style="max-height:64vh">${rows}</div><div class="separator"></div><button id="closeCL">閉じる</button></div></div>`;
+ root.querySelector("#closeCL").onclick=()=>root.innerHTML="";
+ root.querySelectorAll("[data-contact]").forEach(b=>b.addEventListener("click",()=>{doContact(b.dataset.contact,b.dataset.kind);openCaptiveList(kind);}));
+ root.querySelectorAll("[data-assign]").forEach(b=>b.addEventListener("click",()=>openAssign(b.dataset.assign)));
+ root.querySelectorAll("[data-unassign]").forEach(b=>b.addEventListener("click",()=>{unassignCaptive(b.dataset.unassign);openCaptiveList(kind);}));
+ bindProf(root);
+}
+
+/* ===== 募兵モーダル ===== */
+function openRecruit(){
+ const root=document.getElementById("modalroot");
+ const gold=1000,food=300;
+ const gain=Math.round(500*recruitBonus());
+ const canGold=state.player.gold>=gold;
+ const canFood=state.player.food>=food;
+ const can=canGold&&canFood&&!state.won&&!isBroke();
+ const maxTimes=Math.max(1,Math.min(
+  Math.floor(state.player.gold/gold),
+  Math.floor(state.player.food/food)
+ ));
+ root.innerHTML=`<div class="battleoverlay"><div class="modal"><h2>♟ 募兵</h2><p>金と兵糧を投じ、兵を募る。</p><div class="detailgrid" style="grid-template-columns:1fr 1fr 1fr"><div class="mini"><span>消費 金</span><b style="color:var(--gold)">${fmt(gold)}</b></div><div class="mini"><span>消費 兵糧</span><b>${fmt(food)}</b></div><div class="mini"><span>獲得 兵力</span><b style="color:var(--green)">+${fmt(gain)}</b></div></div>${!canGold?`<p class="eyebrow" style="color:var(--red)">金が足りません。</p>`:""}${!canFood?`<p class="eyebrow" style="color:var(--red)">兵糧が足りません。</p>`:""}${isBroke()?`<p class="eyebrow" style="color:var(--red)">破綻中は募兵できません。</p>`:""}<p class="eyebrow">鍛冶場や国家方針「慰安配給令」で獲得兵が増える。</p><div class="separator"></div><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="primary" id="doRecruit" ${can?"":"disabled"}>募兵する（金 ${fmt(gold)} / 兵糧 ${fmt(food)} → 兵 +${fmt(gain)}）</button>${maxTimes>1?`<button id="doRecruitMax">最大 ${maxTimes} 回（金 ${fmt(gold*maxTimes)} / 兵糧 ${fmt(food*maxTimes)} → 兵 +${fmt(gain*maxTimes)}）</button>`:""}<button id="closeRecruit">閉じる</button></div></div></div>`;
+ root.querySelector("#closeRecruit").onclick=()=>root.innerHTML="";
+ root.querySelector("#doRecruit").onclick=()=>{recruit();openRecruit();};
+ root.querySelector("#doRecruitMax")?.addEventListener("click",()=>{recruitTimes(maxTimes);openRecruit();});
+}
+
 function contactResult(t,kind){let sum=0;t.temper.forEach(x=>{const row=CONTACT[x.name]||{};const base=row[kind]||0;sum+=base*(x.stage||1);});return sum;}
 function doContact(id,kind){
  const t=state.captives.find(x=>x.id===id);if(!t||t.status!=="resist")return;
@@ -477,11 +517,7 @@ function doContact(id,kind){
  else if(delta>0)log(`「${t.name}」に${label}。逆効果で抵抗 +${delta}。${pick(LINES[scene]).text}`,"warn");
  else log(`「${t.name}」に${label}。抵抗はほとんど動かなかった。`,"");
  if(t.resist<=0){t.resist=0;t.status="ready";log(`捕虜「${t.name}」が屈服した。（気質：${temperLabel(t.temper)}）`,"ero");}
- const scroller=document.querySelector(".captives");
- const scrollTop=scroller?scroller.scrollTop:0;
  render();
- const s2=document.querySelector(".captives");
- if(s2)s2.scrollTop=scrollTop;
 }
 
 function buildingIncome(){
@@ -512,7 +548,6 @@ function housingUsed(c,type){return state.captives.filter(t=>t.assignedCountry==
 
 function nextTurn(){
  if(state.won)return;state.turn++;
- // 陳列の威信収入（建物ごとに人数倍率）
  const dispByBuilding={};
  state.captives.forEach(t=>{
   if(t.status!=="display"||t.role!=="display")return;
@@ -525,7 +560,6 @@ function nextTurn(){
   const gain=Math.round(10*n*mult);
   group.forEach(t=>{state.player.prestige+=Math.round((gain/n)*traitEff(t,"display_adj"));t.dispT=(t.dispT||0)+1;});
  });
- // 特性による加算（性別不詳など）
  let traitPrestige=0,traitGold=0,traitFood=0,traitTroops=0;
  state.captives.forEach(t=>{
   const a=traitAdd(t);
@@ -535,7 +569,6 @@ function nextTurn(){
  state.player.gold+=traitGold;
  state.player.food+=traitFood;
  state.player.troops+=traitTroops;
- // 秘密ステータス：処女性の喪失
  state.captives.forEach(t=>{
   if(!t.secret)return;
   if(t.secret.defloration===1&&state.turn>t.capturedTurn){
@@ -543,7 +576,6 @@ function nextTurn(){
    log(`「${t.name}」は処女を失った。`,"ero");
   }
  });
- // 秘密ステータス：経験人数・中出し
  state.captives.forEach(t=>{
   if(!t.secret)return;
   if(state.turn<t.capturedTurn)return;
@@ -556,7 +588,6 @@ function nextTurn(){
   const realInc=t.secret.partners-before;
   t.secret.creampie=Math.min(999,t.secret.creampie+Math.floor(realInc/2));
  });
- // 秘密ステータス：搾乳量（乳牛の間、ターン毎）
  state.captives.forEach(t=>{
   if(!t.secret)return;
   if(t.role!=="milk")return;
@@ -565,7 +596,6 @@ function nextTurn(){
   const inc=lo+Math.floor(Math.random()*(hi-lo+1));
   t.secret.milk=Math.min(9999,t.secret.milk+inc);
  });
- // 秘密ステータス：孕んだ数（中出し10回ごとに50%、クールダウン6ターン）
  state.captives.forEach(t=>{
   if(!t.secret)return;
   if(t.secret.pregCd&&state.turn<t.secret.pregCd)return;
@@ -578,7 +608,6 @@ function nextTurn(){
    log(`「${t.name}」が身ごもった。`,"ero");
   }
  });
- // 秘密ステータス：絶頂回数（役割割り当て中、45%で+1）
  state.captives.forEach(t=>{
   if(!t.secret)return;
   if(t.assignedCountry==null)return;
@@ -701,6 +730,19 @@ function defect(t){
 }
 
 function recruit(){if(state.player.gold<1000){toast("金が足りません。");return;}if(state.player.food<300){toast("兵糧が足りません。");return;}state.player.gold-=1000;state.player.food-=300;const gain=Math.round(500*recruitBonus());state.player.troops+=gain;const home=state.countries[HOME];home.troops+=gain;log(`金 1,000 と兵糧 300 を投じ、兵 ${gain} を募った。`,"good");render();toast(`兵力が${gain}増えました。`);}
+function recruitTimes(n){
+ let total=0,count=0;
+ for(let i=0;i<n;i++){
+  if(state.player.gold<1000||state.player.food<300)break;
+  state.player.gold-=1000;state.player.food-=300;
+  const gain=Math.round(500*recruitBonus());
+  state.player.troops+=gain;state.countries[HOME].troops+=gain;
+  total+=gain;count++;
+ }
+ if(count)log(`金 ${fmt(count*1000)} と兵糧 ${fmt(count*300)} を投じ、兵 ${fmt(total)} を募った。（${count}回）`,"good");
+ render();
+ toast(count?`兵力が${fmt(total)}増えました。`:"募兵できませんでした。");
+}
 
 /* ===== 戦闘 ===== */
 function startBattle(){
@@ -909,24 +951,18 @@ function assignTo(capId,countryId,type,slotKey){const t=state.captives.find(x=>x
 function housingUsedForSlot(c,key){const s=c.slots[key];if(!s)return 0;return state.captives.filter(t=>t.assignedCountry===c.id&&t.dispSlot===key).length;}
 function unassignCaptive(capId){const t=state.captives.find(x=>x.id===capId);if(!t)return;t.assignedCountry=null;t.role=null;t.status="ready";t.effect="";t.dispSlot=null;state.displayed=state.displayed.filter(id=>id!==t.id);log(`「${t.name}」の割り当てを解除した。`,"");render();if(document.getElementById("slotgrid"))openBuild();}
 
-function showPrestige(){const p=state.player.prestige;const rank=p>=100?"天下人":p>=60?"覇者":p>=30?"名将":p>=10?"群雄":"一領主";alert(`現在の威信：${p}\n評価：${rank}\n敵係数の削減：${Math.round(prestigeBonus()*100)}%（上限25%）\n支配国：${owned().length}/16\n捕虜：${state.captives.length} / 枠 ${capLimit()}\n陳列中：${state.displayed.length}\n\n威信は毎ターン2%減衰します。陳列で維持してください。`);}
 function showVictory(){if(document.getElementById("victoryOverlay"))return;const root=document.getElementById("modalroot");root.innerHTML=`<div class="battleoverlay" id="victoryOverlay"><div class="modal victory"><div class="eyebrow">THE LAND IS UNITED</div><h2>天下統一</h2><p>全16国を統べ、女たちはあなたのものになった。</p><div class="detailgrid"><div class="mini"><span>統一ターン</span><b>${state.turn}</b></div><div class="mini"><span>威信</span><b>${state.player.prestige}</b></div><div class="mini"><span>捕虜</span><b>${state.captives.length}</b></div></div><div class="separator"></div><button class="primary" id="closeVictory">軍記録を振り返る</button></div></div>`;root.querySelector("#closeVictory").onclick=()=>root.innerHTML="";}
 
 /* ===== 説明書 ===== */
 function openManual(){const root=document.getElementById("modalroot");root.innerHTML=`<div class="battleoverlay"><div class="modal wide manual"><h2>説明書</h2><p>このゲームの内政・特殊・収容システムの仕組み。</p>${MANUAL_HTML}<div class="separator"></div><button id="closeMan">閉じる</button></div></div>`;
  root.querySelector("#closeMan").onclick=()=>root.innerHTML="";}
 
-document.getElementById("nextBtn").onclick=nextTurn;
 document.getElementById("nextTop").onclick=nextTurn;
-document.getElementById("recruitBtn").onclick=recruit;
-document.getElementById("buildBtn").onclick=openBuild;
-document.getElementById("specialBtn").onclick=openSpecial;
-document.getElementById("attackBtn").onclick=startBattle;
-document.getElementById("prestigeBtn").onclick=showPrestige;
 document.getElementById("saveBtn").onclick=()=>save(false);
 document.getElementById("loadBtn").onclick=load;
 document.getElementById("manualBtn").onclick=openManual;
 document.getElementById("resetBtn").onclick=reset;
+document.getElementById("capTabBtn").onclick=()=>openCaptiveList("cap");
 document.querySelectorAll("[data-rtab]").forEach(b=>b.addEventListener("click",()=>{rightTab=b.dataset.rtab;render();}));
 document.querySelectorAll("[data-ltab]").forEach(b=>b.addEventListener("click",()=>{leftTab=b.dataset.ltab;render();}));
 
