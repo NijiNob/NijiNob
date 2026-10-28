@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NijiNob v0.31 — 女を奪い、天下を取れ</title>
+<link rel="stylesheet" href="style.css?v=31">
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+ <div class="brand"><h1>NijiNob v0.31 <span style="color:var(--gold)">/</span> 女を奪い、天下を取れ</h1><p>16国を制し、女を捕らえ、屈服させ、陳列せよ。</p></div>
+ <div class="turnbox"><div><div class="eyebrow">TURN</div><div class="turnnum" id="turn">1</div></div><button class="primary" id="nextTop">次のターン →</button></div>
+</header>
+<section class="hud" id="hud"></section>
+<div class="layout">
+ <aside class="sidetiles" id="sidetiles"></aside>
+ <section class="panel">
+  <div class="panelhead"><div><h2>勢力地図</h2><div class="eyebrow">4 × 4 国土図 · 上下左右の隣接国へ侵攻可能</div></div><span class="pill" id="landCount">領土 1 / 16</span></div>
+  <div class="mapgrid" id="map"></div>
+  <div class="legend"><span><i class="dot" style="background:#8a6fc0"></i>自勢力</span><span><i class="dot" style="background:var(--gold)"></i>侵攻可能</span><span><i class="dot" style="background:#e07a6a"></i>交戦中</span><span><i class="dot" style="background:#3a3a3a"></i>敵勢力</span></div>
+ </section>
+ <aside class="sidecol">
+  <section class="panel">
+   <div class="tabs"><button class="active" data-rtab="country">国情報</button><button id="capTabBtn">捕虜</button><button data-rtab="lands">自勢力</button><button data-rtab="specials">勢力建造物</button></div>
+   <div id="rightbody"></div>
+  </section>
+  <section class="panel">
+   <div class="tabs"><button class="active" data-ltab="log">ログ</button></div>
+   <div id="leftbody"></div>
+  </section>
+ </aside>
+</div>
+<div class="bottom">
+ <div class="left"><button id="saveBtn">保存</button><button id="loadBtn">ロード</button><button id="manualBtn">説明書</button><button id="resetBtn" class="danger">新規開始</button></div>
+ <div class="right"><span class="notice">自動保存あり · ryakudatsu_v0.31 · 外部データ読み込み</span></div>
+</div>
+</div>
+<div id="modalroot"></div><div id="toast" class="toast hidden"></div>
+
+<script src="data/characters.js?v=31"></script>
+<script src="data/text.js?v=31"></script>
+<script src="js/core.js?v=31"></script>
+<script src="js/game.js?v=31"></script>
+<script src="js/ui.js?v=31"></script>
+<script src="js/main.js?v=31"></script>
+</body>
+</html>
