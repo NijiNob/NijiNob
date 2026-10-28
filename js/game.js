@@ -114,9 +114,16 @@ function initialState(homeName,opts={}){
  if(diff==="easy")weak=shuffle(neighbors).slice(0,2);
  else if(diff==="normal")weak=shuffle(neighbors).slice(0,1);
  const weakSet=new Set(weak);
+ let mid=[];
+ if(diff==="easy"||diff==="normal"){
+  const midCand=shuffle(neighbors.filter(id=>!weakSet.has(id)));
+  mid=midCand.slice(0,2);
+ }
+ const midSet=new Set(mid);
  const assign={};
  weak.forEach(id=>{assign[id]=1;});
- const restIds=enemyIds.filter(id=>!weakSet.has(id));
+ mid.forEach(id=>{assign[id]=1;});
+ const restIds=enemyIds.filter(id=>!weakSet.has(id)&&!midSet.has(id));
  const RANK_ORDER={S:0,A:1,B:2,C:3};
  const sorted=[...pool].sort((a,b)=>(RANK_ORDER[b[2]]??3)-(RANK_ORDER[a[2]]??3));
  const weakCount=weak.reduce((a,id)=>a+assign[id],0);
@@ -126,20 +133,27 @@ function initialState(homeName,opts={}){
   weakPool=weakPool.concat(bPool.slice(0,weakCount-weakPool.length));
  }
  const weakPoolSet=new Set(weakPool);
- const restPool=sorted.filter(w=>!weakPoolSet.has(w));
+ const midCount=mid.length;
+ let midPool=sorted.filter(w=>!weakPoolSet.has(w)&&w[2]==="B");
+ if(midPool.length<midCount){
+  const aPool=sorted.filter(w=>!weakPoolSet.has(w)&&w[2]==="A");
+  midPool=midPool.concat(aPool.slice(0,midCount-midPool.length));
+ }
+ const midPoolSet=new Set(midPool);
+ const restPool=sorted.filter(w=>!weakPoolSet.has(w)&&!midPoolSet.has(w));
  let remaining=restPool.length;
  const per=Math.floor(remaining/restIds.length);
  let rem=remaining-per*restIds.length;
  restIds.forEach(id=>{assign[id]=per;});
  shuffle(restIds).slice(0,rem).forEach(id=>{assign[id]++;});
  restIds.forEach(id=>{if(assign[id]<1)assign[id]=1;});
- let wi=0,ri=0;
+ let wi=0,mi=0,ri=0;
  const countries=NAMES.map((name,i)=>{
   if(i===HOME){return {id:i,name:homeName||NAMES[HOME],owner:"player",troops:4000,food:2800,gold:1800,slots:newSlots(),generals:[]};}
   const n=assign[i]||1;
   const generals=[];
   for(let j=0;j<n;j++){
-   const w=(weakSet.has(i)?weakPool[wi++]:restPool[ri++])||["名もなき女","にじさんじ","C",null];
+   const w=(weakSet.has(i)?weakPool[wi++]:midSet.has(i)?midPool[mi++]:restPool[ri++])||["名もなき女","にじさんじ","C",null];
    const pt=POWER_TABLE[w[2]]||POWER_TABLE.C;
    const temper=randomTemper?rollTemper():(w[3]?fixedTemper(w[3]):rollTemper());
    const cm=modOf(temper,"combat");
@@ -152,8 +166,14 @@ function initialState(homeName,opts={}){
   const slots=newSlots();
   slots.center.lv=scale.center;
   if(scale.center>=2){slots.topLeft={type:"heisya",lv:1};slots.top={type:"hatake",lv:1};}
+  let total=generals.reduce((s,g)=>s+g.power,0);
+  if(midSet.has(i)&&total>=7000){
+   const k=6900/total;
+   generals.forEach(g=>{g.power=Math.max(1,Math.round(g.power*k));});
+   total=generals.reduce((s,g)=>s+g.power,0);
+  }
   const econ=decideEcon(generals);
-  return {id:i,name,owner:"enemy",troops:generals.reduce((s,g)=>s+g.power,0),food:scale.food,gold:scale.gold,slots,generals,econ,nextAct:1+Math.floor(Math.random()*2)};
+  return {id:i,name,owner:"enemy",troops:total,food:scale.food,gold:scale.gold,slots,generals,econ,nextAct:1+Math.floor(Math.random()*2)};
  });
  return {turn:1,player:{troops:4000,food:2800,gold:1800,prestige:0,recruitCount:0},countries,captives:[],displayed:[],specials:{gokusha:{lv:0},kanshitou:{lv:0}},tree:{},battle:null,log:[{turn:1,text:"あなたは本拠を構え、女を奪う天下取りの第一歩を踏み出した。",type:"good"}],won:false,lastConquered:null,lastConqueredLord:null,lastInvaded:null};
 }
