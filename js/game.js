@@ -314,7 +314,7 @@ function advanceTurn(snap){
  state.player.prestige+=inc.prestige;
  let foodCost=0;
  state.captives.forEach(t=>{foodCost+=5;});
- const upkeep=Math.ceil(state.player.troops*.22*kuraMod());
+ const upkeep=Math.ceil(state.player.troops*.20*kuraMod());
  state.player.food=Math.floor(state.player.food+inc.food-upkeep-foodCost);
  state.player.gold=Math.floor(state.player.gold+inc.gold-inc.upkeep);
  state.player.troops=Math.floor(state.player.troops+inc.troops);
