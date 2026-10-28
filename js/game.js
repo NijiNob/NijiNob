@@ -141,12 +141,30 @@ function initialState(homeName,opts={}){
  }
  const midPoolSet=new Set(midPool);
  const restPool=sorted.filter(w=>!weakPoolSet.has(w)&&!midPoolSet.has(w));
- let remaining=restPool.length;
- const per=Math.floor(remaining/restIds.length);
- let rem=remaining-per*restIds.length;
- restIds.forEach(id=>{assign[id]=per;});
- shuffle(restIds).slice(0,rem).forEach(id=>{assign[id]++;});
- restIds.forEach(id=>{if(assign[id]<1)assign[id]=1;});
+ const distOf=id=>Math.abs(Math.floor(id/4)-r)+Math.abs(id%4-col);
+ const cornerOf=id=>{const rr=Math.floor(id/4),cc=id%4;return (rr===0||rr===3)&&(cc===0||cc===3);};
+ const weightOf=id=>{
+  const rr=Math.floor(id/4),cc=id%4;
+  let w=1+distOf(id);
+  if((rr===0||rr===3)&&(cc===0||cc===3))w*=3;
+  else if(cc===3)w*=2;
+  return w;
+};
+ const weights=restIds.map(weightOf);
+ const totalW=weights.reduce((a,b)=>a+b,0);
+ const share=restPool.length;
+ let given=0;
+ restIds.forEach((id,idx)=>{
+  const n=Math.max(1,Math.floor(share*weights[idx]/totalW));
+  assign[id]=n;given+=n;
+ });
+ let left=share-given;
+ const order=restIds.map((id,idx)=>idx).sort((a,b)=>weights[b]-weights[a]);
+ let oi=0;
+ while(left>0&&order.length){
+  assign[restIds[order[oi%order.length]]]++;
+  left--;oi++;
+ }
  let wi=0,mi=0,ri=0;
  const countries=NAMES.map((name,i)=>{
   if(i===HOME){return {id:i,name:homeName||NAMES[HOME],owner:"player",troops:4000,food:2800,gold:1800,slots:newSlots(),generals:[]};}
@@ -177,14 +195,6 @@ function initialState(homeName,opts={}){
  });
  return {turn:1,player:{troops:4000,food:2800,gold:1800,prestige:0,recruitCount:0},countries,captives:[],displayed:[],specials:{gokusha:{lv:0},kanshitou:{lv:0}},tree:{},battle:null,log:[{turn:1,text:"あなたは本拠を構え、女を奪う天下取りの第一歩を踏み出した。",type:"good"}],won:false,lastConquered:null,lastConqueredLord:null,lastInvaded:null};
 }
-function migrateCaptives(){state.captives.forEach(t=>{
- if(!t.secret)t.secret=initSecret(t.name,false);
- if(!t.captor)t.captor=rollUnit();
- if(!t.escort)t.escort=pick(ESCORT_UNITS);
- if(!t.bind)t.bind=pick(BIND_STATES);
- if(!t.report)t.report={found:pick(LINES.report.found),flight:pick(LINES.report.flight),transit:pick(LINES.report.transit)};
- if(!t.secret.tierCache){t.secret.tierCache={};for(const k in SECRET_STATS){const tr=tierOf(k,t.secret[k]||0);t.secret.tierCache[k]=tr?tr.min:0;}}
-});}
 function migrateState(){
  if(!state.player)state.player={troops:2800,food:2800,gold:1800,prestige:0};
  if(state.player.recruitCount==null)state.player.recruitCount=0;
@@ -333,7 +343,7 @@ function advanceTurn(snap){
  state.player.prestige+=inc.prestige;
  let foodCost=0;
  state.captives.forEach(t=>{foodCost+=5;});
- const upkeep=Math.ceil(state.player.troops*.20*kuraMod());
+ const upkeep=Math.ceil(state.player.troops*.22*kuraMod());
  state.player.food=Math.floor(state.player.food+inc.food-upkeep-foodCost);
  state.player.gold=Math.floor(state.player.gold+inc.gold-inc.upkeep);
  state.player.troops=Math.floor(state.player.troops+inc.troops);
@@ -359,6 +369,27 @@ function advanceTurn(snap){
  const cap5=treeOwned("cap5")?0.5:1;
  [...state.captives].forEach(t=>{let ch=t.status==="resist"?.05*(t.resist/Math.max(1,t.resistMax)):.01;ch*=tower*starve*cap5;if(Math.random()<ch)defect(t);});
  if(state.battle){state.battle.round=0;state.battle.lastEnemyTactic=null;state.battle.lastPlayerTactic=null;state.battle.lastResult=null;}
+ if(state.turn%5===0){
+  const used=new Set();
+  state.countries.forEach(c=>c.generals.forEach(g=>used.add(g.name)));
+  state.captives.forEach(t=>used.add(t.name));
+  const rest=CHARACTERS.filter(c=>!used.has(c.name));
+  if(rest.length){
+   const atkSet=new Set(attackable().map(c=>c.id));
+   const cands=state.countries.filter(c=>c.owner==="enemy"&&!atkSet.has(c.id));
+   const pool2=cands.length?cands:state.countries.filter(c=>c.owner==="enemy");
+   if(pool2.length){
+    const dst=pick(pool2);
+    const w=pick(rest);
+    const pt=POWER_TABLE[w.rank]||POWER_TABLE.C;
+    const temper=rollTemper();
+    const cm=modOf(temper,"combat");
+    dst.generals.push({name:w.name,affiliation:w.aff,rank:w.rank,power:Math.round(pt.troops*cm),temper,traits:traitsFor(w.name),capCount:0,homeId:dst.id,nonVirgin:false});
+    dst.troops+=Math.round(pt.troops*cm);
+    log(`◇ ${dst.name}国に新たな領主「${w.name}」が現れた。`,"warn");
+   }
+  }
+ }
  enemyTurn();
  state.lastConquered=null;state.lastInvaded=null;
  render();
