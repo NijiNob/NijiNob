@@ -177,7 +177,6 @@ function initialState(homeName,opts={}){
  });
  return {turn:1,player:{troops:4000,food:2800,gold:1800,prestige:0,recruitCount:0},countries,captives:[],displayed:[],specials:{gokusha:{lv:0},kanshitou:{lv:0}},tree:{},battle:null,log:[{turn:1,text:"あなたは本拠を構え、女を奪う天下取りの第一歩を踏み出した。",type:"good"}],won:false,lastConquered:null,lastConqueredLord:null,lastInvaded:null};
 }
-
 function migrateCaptives(){state.captives.forEach(t=>{
  if(!t.secret)t.secret=initSecret(t.name,false);
  if(!t.captor)t.captor=rollUnit();
