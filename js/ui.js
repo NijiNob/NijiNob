@@ -65,7 +65,9 @@ function renderMap(){
   btn.innerHTML=`${badge}<div class="cname">${c.name}</div><div class="cowner">${isOwn?"あなたの勢力":"領主 "+(c.generals[0]?.name||"")}</div>${isOwn?"":`<div class="cstats">兵 ${fmt(dispTroops)}</div>`}`;
   btn.addEventListener("click",()=>{
    if(state.battle&&state.battle.targetId===c.id){openBattle();return;}
-   selected=c.id;render();
+   selected=c.id;
+   if(c.owner==="player")rightTab="country";
+   render();
   });
   map.appendChild(btn);
  });
