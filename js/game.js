@@ -551,12 +551,17 @@ function battleAction(kind){
  log(`⚔ ${t.name}国と交戦。自「${TACTICS[kind].label}」対敵「${TACTICS[enemyTactic].label}」（${result}）。敵 −${eLoss}、自 −${pLoss}。`,result==="好相性"?"good":result==="悪相性"?"warn":"");
  if(state.battle.enemyTroops<=0){winBattle();return;}
  if(state.battle.playerTroops<=0){loseBattle();return;}
-if(state.battle.round>=3){
+ if(state.battle.round>=3){
   document.getElementById("modalroot").innerHTML="";
   state.battle.round=0;
+  state.battle.lastEnemyTactic=null;
+  state.battle.lastPlayerTactic=null;
+  state.battle.lastResult=null;
   log(`⚔ ${t.name}国との交戦は翌ターンへ持ち越し。`,"warn");
   render();return;
  }
+ openBattle();
+}
 function winBattle(){
  const t=state.countries[state.battle.targetId];
  state.player.troops=state.battle.playerTroops;
