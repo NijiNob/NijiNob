@@ -364,6 +364,8 @@ select,input{background:#1c1c1c;color:var(--text);border:1px solid var(--line);p
 .newsfront{flex:0 0 auto;max-height:46vh;overflow-y:auto;padding:2px 0}
 .newsfront .newslead h3{font-size:30px;line-height:1.3}
 .newsfront .newslead p{font-size:16px;line-height:2}
+.newslead .newschange{align-items:flex-start}
+.newslead .newschange p{flex:1;min-width:0;margin:0}
 /* ===== レスポンシブ ===== */
 @media(max-width:760px){
  .wrap{padding:10px}
