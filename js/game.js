@@ -363,7 +363,7 @@ function advanceTurn(snap){
  if(state.battle)state.battle.playerTroops=Math.floor(state.battle.playerTroops+inc.troops);
  state.player.prestige=Math.floor(state.player.prestige*.98);
  snap.income={food:inc.food,gold:inc.gold,troops:inc.troops,prestige:inc.prestige,upkeep,foodCost,traitPrestige,traitGold,traitFood,traitTroops};
- let msg=`${pick(LINES.turn).text} 設備収入：兵糧 +${inc.food}、金 +${inc.gold}、兵 +${inc.troops}、威信 +${inc.prestige}。軍勢の兵糧消費 −${upkeep}。`;
+ let msg=`設備収入：兵糧 +${inc.food}、金 +${inc.gold}、兵 +${inc.troops}、威信 +${inc.prestige}。軍勢の兵糧消費 −${upkeep}。`;
  if(foodCost)msg+=`捕虜の糧 −${foodCost}。`;
  if(traitPrestige||traitGold||traitFood||traitTroops)msg+=`特性収入：威信 +${traitPrestige}、金 +${traitGold}、兵糧 +${traitFood}、兵 +${traitTroops}。`;
  if(state.player.food<0){const shortage=Math.ceil(Math.abs(state.player.food)/3);state.player.troops=Math.max(0,state.player.troops-shortage);msg+=`兵糧が尽き、兵 ${shortage} が離散した。`;log(msg,"warn");}
