@@ -259,6 +259,17 @@ function collectTurnSnapshot(){
  state.captives.forEach(t=>{if(t.secret&&t.secret.tierCache)before[t.id]=Object.assign({},t.secret.tierCache);});
  return {before,conquered:state.lastConquered,conqueredLord:state.lastConqueredLord,invaded:state.lastInvaded};
 }
+function turnDisplayText(){
+ const pool=state.captives.filter(t=>t.role&&t.secret&&t.assignedCountry!=null);
+ if(!pool.length)return null;
+ const t=pick(pool);
+ const key=t.role==="milk"?"milk":"partners";
+ const v=(t.secret&&t.secret[key])||0;
+ const stage=t.role==="milk"?(v>=2000?"high":v>=300?"mid":"low"):(v>=40?"high":v>=10?"mid":"low");
+ const arr=LINES.turnDisplay[t.role]&&LINES.turnDisplay[t.role][stage];
+ if(!arr||!arr.length)return null;
+ return {text:pick(arr).replace(/\{name\}/g,t.name),cap:t};
+}
 function advanceTurn(snap){
  state.turn++;
  state.player.recruitCount=0;
