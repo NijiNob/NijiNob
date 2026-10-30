@@ -270,6 +270,11 @@ function advanceTurn(snap){
   else if(t.role==="milk"||t.role==="display")rate=0.60;
   if(Math.random()<rate)t.secret.climax=Math.min(999,t.secret.climax+1);
  });
+ state.captives.forEach(t=>{
+  if(t.status!=="display"||t.role!=="display")return;
+  const key=(t.assignedCountry??"x")+"_"+(t.dispSlot??"x");
+  (dispByBuilding[key]=dispByBuilding[key]||[]).push(t);
+ });
  const dispBonus=(treeOwned("cap2")?1.2:1)*(treeOwned("cap4")?1.15:1);
  Object.values(dispByBuilding).forEach(group=>{
   const n=group.length;
@@ -325,11 +330,6 @@ function advanceTurn(snap){
    t.secret.pregnancies=Math.min(999,t.secret.pregnancies+1);
    log(`「${t.name}」が身ごもった。`,"ero");
   }
- });
- state.captives.forEach(t=>{
-  if(!t.secret)return;
-  if(t.assignedCountry==null)return;
-  if(Math.random()<0.45)t.secret.climax=Math.min(999,t.secret.climax+1);
  });
  state.captives.forEach(t=>{
   if(!t.secret)return;
