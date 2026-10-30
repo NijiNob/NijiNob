@@ -264,9 +264,11 @@ function advanceTurn(snap){
  state.player.recruitCount=0;
  const dispByBuilding={};
  state.captives.forEach(t=>{
-  if(t.status!=="display"||t.role!=="display")return;
-  const key=(t.assignedCountry??"x")+"_"+(t.dispSlot??"x");
-  (dispByBuilding[key]=dispByBuilding[key]||[]).push(t);
+  if(!t.secret)return;
+  let rate=0.30;
+  if(t.role==="nikubenki")rate=0.90;
+  else if(t.role==="milk"||t.role==="display")rate=0.60;
+  if(Math.random()<rate)t.secret.climax=Math.min(999,t.secret.climax+1);
  });
  const dispBonus=(treeOwned("cap2")?1.2:1)*(treeOwned("cap4")?1.15:1);
  Object.values(dispByBuilding).forEach(group=>{
@@ -475,7 +477,7 @@ function defect(t){
  log(`捕虜「${t.name}」が逃げた。${pick(LINES.escape).text}`,"bad");
  if(!others.length){log(`「${t.name}」は行き場を失い、消えた。`,"bad");return;}
  const dst=pick(others);
- dst.generals.push({name:t.name,affiliation:t.affiliation,rank:t.rank,power:t.power,temper:t.temper,traits:t.traits||[],capCount:t.capCount||0,homeId:t.homeId,nonVirgin:t.secret?t.secret.defloration===0:false});
+ dst.generals.push({name:t.name,affiliation:t.affiliation,rank:t.rank,power:t.power,temper:t.temper,traits:t.traits||[],capCount:t.capCount||0,homeId:t.homeId,nonVirgin:t.secret?t.secret.defloration===0:false,secret:t.secret||null});
  dst.troops+=Math.round(t.power*.3);log(`「${t.name}」は${dst.name}国へ亡命した。${dst.name}国の兵が増える。`,"bad");
 }
 
@@ -592,8 +594,7 @@ function captureGeneral(g,country,extra=0){
  let resistMax=Math.round(pt.resist*modOf(g.temper,"resist"));
  if(treeOwned("cap5"))resistMax=Math.round(resistMax*0.75);
  const id="c"+Date.now()+"_"+Math.random().toString(36).slice(2,6);
- const cap={id,name:g.name,affiliation:g.affiliation,rank:g.rank,power:g.power,temper:g.temper,traits:g.traits||[],resist:resistMax,resistMax,status:"resist",capturedTurn:state.turn,homeId:country.id,capCount:g.capCount||0,contacted:false,assignedCountry:null,role:null,dispSlot:null,effect:"",secret:initSecret(g.name,g.nonVirgin),captor:rollUnit(),escort:pick(ESCORT_UNITS),bind:pick(BIND_STATES),report:{found:pick(LINES.report.found),flight:pick(LINES.report.flight),transit:pick(LINES.report.transit)}};
- if(state.captives.length>=capLimit()+extra){
+ const cap={id,name:g.name,affiliation:g.affiliation,rank:g.rank,power:g.power,temper:g.temper,traits:g.traits||[],resist:resistMax,resistMax,status:"resist",capturedTurn:state.turn,homeId:country.id,capCount:g.capCount||0,contacted:false,assignedCountry:null,role:null,dispSlot:null,effect:"",secret:g.secret?g.secret:initSecret(g.name,g.nonVirgin),captor:rollUnit(),escort:pick(ESCORT_UNITS),bind:pick(BIND_STATES),report:{found:pick(LINES.report.found),flight:pick(LINES.report.flight),transit:pick(LINES.report.transit)}}; if(state.captives.length>=capLimit()+extra){
   const others=state.countries.filter(c=>c.owner==="enemy"&&c.id!==country.id);
   if(!others.length){
    log(`捕虜枠が満杯。${g.name}は行き場を失い、解放された。`,"warn");
