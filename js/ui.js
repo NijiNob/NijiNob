@@ -451,9 +451,21 @@ function openNews(snap){
   const c=state.countries[state.battle.targetId];
   const body=pick(LINES.newsWar).replace(/\{country\}/g,c.name);
   lead=`<div class="newslead"><div class="newsflag">戦争中</div><h3>${escapeHtml(pick(LINES.newsWarTitle))}</h3><p>${escapeHtml(body)}</p></div>`;
+ }else if(state.battle){
+  const c=state.countries[state.battle.targetId];
+  const body=pick(LINES.newsWar).replace(/\{country\}/g,c.name);
+  lead=`<div class="newslead"><div class="newsflag">戦争中</div><h3>${escapeHtml(pick(LINES.newsWarTitle))}</h3><p>${escapeHtml(body)}</p></div>`;
  }else{
-  lead=`<div class="newslead peace"><div class="newsflag">平和</div><h3>${escapeHtml(pick(LINES.newsPeaceTitle))}</h3><p>${escapeHtml(pick(LINES.newsPeace))}</p></div>`;
+  const td=turnDisplayText();
+  if(td){
+   const p=PROFILE[td.cap.name]||{};
+   const src=p.id?`images/${p.id}.png`:"";
+   lead=`<div class="newslead"><div class="newsflag">捕虜近況</div><h3>${escapeHtml(td.cap.name)}</h3><div class="newschange"><div class="newsimg">${src?`<img src="${src}" alt="${escapeHtml(td.cap.name)}" onerror="this.style.display='none';this.parentNode.textContent='—';">`:"—"}</div><p>${escapeHtml(td.text)}</p></div></div>`;
+  }else{
+   lead=`<div class="newslead peace"><div class="newsflag">平和</div><h3>${escapeHtml(pick(LINES.newsPeaceTitle))}</h3><p>${escapeHtml(pick(LINES.newsPeace))}</p></div>`;
+  }
  }
+ const changed=[];
  const changed=[];
  state.captives.forEach(t=>{
   const before=snap.before[t.id];
