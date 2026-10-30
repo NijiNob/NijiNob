@@ -594,14 +594,16 @@ function captureGeneral(g,country,extra=0){
  let resistMax=Math.round(pt.resist*modOf(g.temper,"resist"));
  if(treeOwned("cap5"))resistMax=Math.round(resistMax*0.75);
  const id="c"+Date.now()+"_"+Math.random().toString(36).slice(2,6);
- const cap={id,name:g.name,affiliation:g.affiliation,rank:g.rank,power:g.power,temper:g.temper,traits:g.traits||[],resist:resistMax,resistMax,status:"resist",capturedTurn:state.turn,homeId:country.id,capCount:g.capCount||0,contacted:false,assignedCountry:null,role:null,dispSlot:null,effect:"",secret:g.secret?g.secret:initSecret(g.name,g.nonVirgin),captor:rollUnit(),escort:pick(ESCORT_UNITS),bind:pick(BIND_STATES),report:{found:pick(LINES.report.found),flight:pick(LINES.report.flight),transit:pick(LINES.report.transit)}}; if(state.captives.length>=capLimit()+extra){
+ const sec=g.secret?g.secret:initSecret(g.name,g.nonVirgin);
+ const cap={id,name:g.name,affiliation:g.affiliation,rank:g.rank,power:g.power,temper:g.temper,traits:g.traits||[],resist:resistMax,resistMax,status:"resist",capturedTurn:state.turn,homeId:country.id,capCount:g.capCount||0,contacted:false,assignedCountry:null,role:null,dispSlot:null,effect:"",secret:sec,captor:rollUnit(),escort:pick(ESCORT_UNITS),bind:pick(BIND_STATES),report:{found:pick(LINES.report.found),flight:pick(LINES.report.flight),transit:pick(LINES.report.transit)}};
+ if(state.captives.length>=capLimit()+extra){
   const others=state.countries.filter(c=>c.owner==="enemy"&&c.id!==country.id);
   if(!others.length){
    log(`捕虜枠が満杯。${g.name}は行き場を失い、解放された。`,"warn");
    return null;
   }
   const dst=pick(others);
-  dst.generals.push({name:g.name,affiliation:g.affiliation,rank:g.rank,power:g.power,temper:g.temper,traits:g.traits||[],capCount:g.capCount||0,homeId:g.homeId,nonVirgin:g.nonVirgin});
+  dst.generals.push({name:g.name,affiliation:g.affiliation,rank:g.rank,power:g.power,temper:g.temper,traits:g.traits||[],capCount:g.capCount||0,homeId:g.homeId,nonVirgin:g.nonVirgin,secret:sec});
   dst.troops+=Math.round(g.power*.3);
   log(`捕虜枠が満杯。${g.name}は${dst.name}国へ亡命した。`,"warn");
   return null;
