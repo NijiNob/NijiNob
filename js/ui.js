@@ -451,10 +451,6 @@ function openNews(snap){
   const c=state.countries[state.battle.targetId];
   const body=pick(LINES.newsWar).replace(/\{country\}/g,c.name);
   lead=`<div class="newslead"><div class="newsflag">戦争中</div><h3>${escapeHtml(pick(LINES.newsWarTitle))}</h3><p>${escapeHtml(body)}</p></div>`;
- }else if(state.battle){
-  const c=state.countries[state.battle.targetId];
-  const body=pick(LINES.newsWar).replace(/\{country\}/g,c.name);
-  lead=`<div class="newslead"><div class="newsflag">戦争中</div><h3>${escapeHtml(pick(LINES.newsWarTitle))}</h3><p>${escapeHtml(body)}</p></div>`;
  }else{
   const td=turnDisplayText();
   if(td){
@@ -465,7 +461,6 @@ function openNews(snap){
    lead=`<div class="newslead peace"><div class="newsflag">平和</div><h3>${escapeHtml(pick(LINES.newsPeaceTitle))}</h3><p>${escapeHtml(pick(LINES.newsPeace))}</p></div>`;
   }
  }
- const changed=[];
  const changed=[];
  state.captives.forEach(t=>{
   const before=snap.before[t.id];
